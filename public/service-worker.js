@@ -21,9 +21,14 @@ self.addEventListener("push", function (event) {
   // Add logic to respond to the push event
   const data = event.data.json();
 
-  console.log("data");
+  const title = "Paper";
+  const options = {
+    body: data.message,
+    badge: data.badge,
+    icon: data.icon,
+  };
 
-  new Notification("HI");
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener("sync", function (event) {
