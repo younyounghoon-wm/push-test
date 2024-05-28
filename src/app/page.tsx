@@ -1,95 +1,93 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import { useEffect, useState } from "react";
+
+const VAPID_PUBLIC_KEY =
+  "BBz-aLS6tcINQi2bVz2c5wJDnnkWr5EaseoR38VoSfJjeivq1bioH1RRqAD1acRhTrDgab6yqn__Uva9t_D9aRo";
 
 export default function Home() {
+  const [permission, setPermission] =
+    useState<NotificationPermission>("default");
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      console.log("서비스 워커를 지원하는 브라우저입니다.");
+      navigator.serviceWorker
+        .register("./service-worker.js")
+        .then((registration) => {
+          console.log("등록 정보", registration);
+        })
+        .catch((err) => {
+          console.error("서비스 워커 등록에 실패하였습니다.", err);
+        });
+    }
+  }, []);
+
+  const handleNotifiy = () => {
+    // 권한 사용자 에이전트 권한 허용 받기
+    Notification.requestPermission().then(
+      (permission: NotificationPermission) => {
+        if (permission === "granted") {
+          console.log("알림 권한 허용");
+
+          // 1. 구독하기
+          navigator.serviceWorker.ready.then((registration) => {
+            const options: PushSubscriptionOptionsInit = {
+              applicationServerKey: VAPID_PUBLIC_KEY,
+              userVisibleOnly: true,
+            };
+
+            // 1-1. 구독정보 요청하기
+            registration.pushManager
+              .subscribe(options)
+              .then((pushSubscription) => {
+                console.log("pushSubscription", pushSubscription);
+
+                // 서버에 구독정보 & PUBLIC_KEY 보내주기
+                fetch("http://localhost:8000/vapidKey", {
+                  method: "POST",
+                  body: JSON.stringify({
+                    pushSubscription,
+                    vapidPublicKey: VAPID_PUBLIC_KEY,
+                  }),
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                })
+                  .then((res) => res.json())
+                  .then((data) => console.log("data", data));
+              })
+              .then((res) => {})
+              .catch((err) => {
+                console.error("구독 정보 실패", err);
+              });
+          });
+
+          // 2. 구독정보 애플리케이션 서버에 보내기
+        } else if (permission === "denied") {
+          console.log("알림 권한 거부");
+        } else {
+          console.log("알림 차단", permission);
+        }
+        setPermission(permission);
+      }
+    );
+  };
+
+  const checkNoti = () => {
+    new Notification("HI");
+  };
+
+  const handlePush = () => {
+    fetch("http://localhost:8000/push").then(() => {});
+  };
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+    <main>
+      <button onClick={handleNotifiy}>알림 켜기</button>
+      <h3>현재 브라우저 알림 권한 : {permission}</h3>
+      <button onClick={checkNoti}>노티 확인용 버튼</button>
+      <button onClick={handlePush}>푸시 날리기</button>
     </main>
   );
 }

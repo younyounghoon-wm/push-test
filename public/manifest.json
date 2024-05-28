@@ -1,0 +1,20 @@
+{
+  "name": "PUSH_TEST",
+  "short_name": "PUSH_TEST",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fff",
+  "description": "push test app",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
